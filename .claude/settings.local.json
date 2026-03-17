@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp -r /Users/bypass.tech/.npm/_npx/caf0f19392284fa8/node_modules/@weweb/create-component/template-element/. /Users/bypass.tech/Downloads/PREVISIA/custom-time-picker/)",
+      "Bash(mv /Users/bypass.tech/Downloads/PREVISIA/custom-time-picker/_gitignore /Users/bypass.tech/Downloads/PREVISIA/custom-time-picker/.gitignore)",
+      "Bash(node:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
