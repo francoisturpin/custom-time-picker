@@ -1,20 +1,20 @@
 <template>
-  <div class="ww-time-picker">
-    <select :value="displayHour" @change="onHourChange">
+  <div class="ww-time-picker" :style="rootStyle">
+    <select :value="displayHour" @change="onHourChange" :style="selectStyle">
       <option v-for="h in hourOptions" :key="h.value" :value="h.value">
         {{ h.label }}
       </option>
     </select>
 
-    <span class="separator">:</span>
+    <span class="separator" :style="separatorStyle">:</span>
 
-    <select :value="displayMinute" @change="onMinuteChange">
+    <select :value="displayMinute" @change="onMinuteChange" :style="selectStyle">
       <option v-for="m in minuteOptions" :key="m" :value="m">
         {{ m }}
       </option>
     </select>
 
-    <select v-if="is12h" :value="period" @change="onPeriodChange">
+    <select v-if="is12h" :value="period" @change="onPeriodChange" :style="selectStyle">
       <option value="AM">AM</option>
       <option value="PM">PM</option>
     </select>
@@ -22,90 +22,150 @@
 </template>
 
 <script>
+import { computed, watch } from 'vue'
+
 export default {
   name: 'CustomTimePicker',
 
   props: {
+    uid: { type: String, required: true },
     content: { type: Object, required: true },
+    /* wwEditor:start */
+    wwEditorState: { type: Object, required: true },
+    /* wwEditor:end */
   },
 
-  emits: ['trigger-event', 'update:content.value'],
+  emits: ['trigger-event'],
 
-  computed: {
-    is12h() {
-      const locale = (this.content.locale || 'fr').toLowerCase()
+  setup(props, { emit }) {
+    // — Internal variable exposed to NoCode users
+    const { value: internalValue, setValue: setInternalValue } =
+      wwLib.wwVariable.useComponentVariable({
+        uid: props.uid,
+        name: 'value',
+        type: 'string',
+        defaultValue: props.content?.initialValue || '09:00',
+      })
+
+    // Sync when initialValue binding changes
+    watch(
+      () => props.content?.initialValue,
+      (newVal) => {
+        if (newVal !== undefined) setInternalValue(newVal)
+      },
+      { immediate: true }
+    )
+
+    // — Helpers
+    const is12h = computed(() => {
+      const locale = (props.content?.locale || 'fr').toLowerCase()
       return locale.startsWith('en-us') || locale === 'en'
-    },
+    })
 
-    // Parse HH:mm → { hours24, minutes }
-    parsed() {
-      const [h, m] = (this.content.value || '09:00').split(':')
+    const parsed = computed(() => {
+      const [h, m] = (internalValue.value || '09:00').split(':')
       return {
         hours24: parseInt(h, 10) || 0,
         minutes: parseInt(m, 10) || 0,
       }
-    },
+    })
 
-    period() {
-      return this.parsed.hours24 >= 12 ? 'PM' : 'AM'
-    },
+    const period = computed(() =>
+      parsed.value.hours24 >= 12 ? 'PM' : 'AM'
+    )
 
-    displayHour() {
-      if (!this.is12h) return String(this.parsed.hours24).padStart(2, '0')
-      const h = this.parsed.hours24 % 12
+    const displayHour = computed(() => {
+      if (!is12h.value) return String(parsed.value.hours24).padStart(2, '0')
+      const h = parsed.value.hours24 % 12
       return String(h === 0 ? 12 : h).padStart(2, '0')
-    },
+    })
 
-    displayMinute() {
-      return String(this.parsed.minutes).padStart(2, '0')
-    },
+    const displayMinute = computed(() =>
+      String(parsed.value.minutes).padStart(2, '0')
+    )
 
-    hourOptions() {
-      if (this.is12h) {
+    const hourOptions = computed(() => {
+      if (is12h.value) {
         return Array.from({ length: 12 }, (_, i) => {
-          const v = i + 1
-          return { value: String(v).padStart(2, '0'), label: String(v).padStart(2, '0') }
+          const v = String(i + 1).padStart(2, '0')
+          return { value: v, label: v }
         })
       }
       return Array.from({ length: 24 }, (_, i) => {
         const v = String(i).padStart(2, '0')
         return { value: v, label: v }
       })
-    },
+    })
 
-    minuteOptions() {
-      return Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'))
-    },
-  },
+    // Steps of 5 minutes
+    const minuteOptions = computed(() =>
+      Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'))
+    )
 
-  methods: {
-    emit(hours24, minutes) {
+    // — Emit helper
+    const emitChange = (hours24, minutes) => {
       const value = `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
-      this.$emit('trigger-event', {
-        name: 'change',
-        event: { value },
-      })
-    },
+      setInternalValue(value)
+      emit('trigger-event', { name: 'change', event: { value } })
+    }
 
-    onHourChange(e) {
+    const onHourChange = (e) => {
       let h = parseInt(e.target.value, 10)
-      if (this.is12h) {
-        if (this.period === 'PM' && h !== 12) h += 12
-        if (this.period === 'AM' && h === 12) h = 0
+      if (is12h.value) {
+        if (period.value === 'PM' && h !== 12) h += 12
+        if (period.value === 'AM' && h === 12) h = 0
       }
-      this.emit(h, this.parsed.minutes)
-    },
+      emitChange(h, parsed.value.minutes)
+    }
 
-    onMinuteChange(e) {
-      this.emit(this.parsed.hours24, parseInt(e.target.value, 10))
-    },
+    const onMinuteChange = (e) => {
+      emitChange(parsed.value.hours24, parseInt(e.target.value, 10))
+    }
 
-    onPeriodChange(e) {
-      let h = this.parsed.hours24
+    const onPeriodChange = (e) => {
+      let h = parsed.value.hours24
       if (e.target.value === 'PM' && h < 12) h += 12
       if (e.target.value === 'AM' && h >= 12) h -= 12
-      this.emit(h, this.parsed.minutes)
-    },
+      emitChange(h, parsed.value.minutes)
+    }
+
+    // — Styles
+    const rootStyle = computed(() => ({
+      gap: props.content?.gap || '6px',
+    }))
+
+    const selectStyle = computed(() => ({
+      fontFamily: props.content?.fontFamily || 'inherit',
+      fontSize: props.content?.fontSize || '14px',
+      fontWeight: props.content?.fontWeight || '400',
+      color: props.content?.textColor || '#1a1a1a',
+      backgroundColor: props.content?.backgroundColor || '#ffffff',
+      border: `${props.content?.borderWidth || '1px'} solid ${props.content?.borderColor || '#d1d5db'}`,
+      borderRadius: props.content?.borderRadius || '6px',
+      padding: props.content?.padding || '6px 10px',
+    }))
+
+    const separatorStyle = computed(() => ({
+      color: props.content?.separatorColor || '#1a1a1a',
+      fontWeight: props.content?.fontWeight || '400',
+      fontSize: props.content?.fontSize || '14px',
+      fontFamily: props.content?.fontFamily || 'inherit',
+    }))
+
+    return {
+      is12h,
+      period,
+      displayHour,
+      displayMinute,
+      hourOptions,
+      minuteOptions,
+      onHourChange,
+      onMinuteChange,
+      onPeriodChange,
+      rootStyle,
+      selectStyle,
+      separatorStyle,
+    }
   },
 }
 </script>
@@ -114,9 +174,22 @@ export default {
 .ww-time-picker {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
 }
+
+.ww-time-picker select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.ww-time-picker select:focus {
+  outline: none;
+  box-shadow: none;
+}
+
 .separator {
   font-weight: bold;
+  user-select: none;
 }
 </style>
