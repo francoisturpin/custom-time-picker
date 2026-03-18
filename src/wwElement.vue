@@ -1,23 +1,62 @@
 <template>
   <div class="ww-time-picker" :style="rootStyle">
-    <select :value="displayHour" @change="onHourChange" :style="selectStyle">
-      <option v-for="h in hourOptions" :key="h.value" :value="h.value">
-        {{ h.label }}
-      </option>
-    </select>
+    <!-- Placeholder display when no value is set -->
+    <template v-if="isEmpty">
+      <span class="ww-time-picker__placeholder" :style="placeholderStyle">
+        {{ content?.placeholder || '--:--' }}
+      </span>
+      <!-- Hidden selects to allow interaction and break out of placeholder state -->
+      <select
+        class="ww-time-picker__ghost"
+        :disabled="content?.readonly"
+        @change="onHourChange"
+        :required="content?.required"
+      >
+        <option value="" disabled selected />
+        <option v-for="h in hourOptions" :key="h.value" :value="h.value">
+          {{ h.label }}
+        </option>
+      </select>
+    </template>
 
-    <span class="separator" :style="separatorStyle">:</span>
+    <!-- Normal display when a value is set -->
+    <template v-else>
+      <select
+        :value="displayHour"
+        :disabled="content?.readonly"
+        :required="content?.required"
+        :style="selectStyle"
+        @change="onHourChange"
+      >
+        <option v-for="h in hourOptions" :key="h.value" :value="h.value">
+          {{ h.label }}
+        </option>
+      </select>
 
-    <select :value="displayMinute" @change="onMinuteChange" :style="selectStyle">
-      <option v-for="m in minuteOptions" :key="m" :value="m">
-        {{ m }}
-      </option>
-    </select>
+      <span class="separator" :style="separatorStyle">:</span>
 
-    <select v-if="is12h" :value="period" @change="onPeriodChange" :style="selectStyle">
-      <option value="AM">AM</option>
-      <option value="PM">PM</option>
-    </select>
+      <select
+        :value="displayMinute"
+        :disabled="content?.readonly"
+        :style="selectStyle"
+        @change="onMinuteChange"
+      >
+        <option v-for="m in minuteOptions" :key="m" :value="m">
+          {{ m }}
+        </option>
+      </select>
+
+      <select
+        v-if="is12h"
+        :value="period"
+        :disabled="content?.readonly"
+        :style="selectStyle"
+        @change="onPeriodChange"
+      >
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </template>
   </div>
 </template>
 
@@ -44,7 +83,7 @@ export default {
         uid: props.uid,
         name: 'value',
         type: 'string',
-        defaultValue: props.content?.initialValue || '09:00',
+        defaultValue: props.content?.initialValue || '',
       })
 
     // Sync when initialValue binding changes
@@ -56,6 +95,9 @@ export default {
       { immediate: true }
     )
 
+    // — State: is the field empty (placeholder mode)?
+    const isEmpty = computed(() => !internalValue.value)
+
     // — Helpers
     const is12h = computed(() => {
       const locale = (props.content?.locale || 'fr').toLowerCase()
@@ -63,7 +105,8 @@ export default {
     })
 
     const parsed = computed(() => {
-      const [h, m] = (internalValue.value || '09:00').split(':')
+      const raw = internalValue.value || '00:00'
+      const [h, m] = raw.split(':')
       return {
         hours24: parseInt(h, 10) || 0,
         minutes: parseInt(m, 10) || 0,
@@ -110,6 +153,7 @@ export default {
     }
 
     const onHourChange = (e) => {
+      if (props.content?.readonly) return
       let h = parseInt(e.target.value, 10)
       if (is12h.value) {
         if (period.value === 'PM' && h !== 12) h += 12
@@ -119,25 +163,33 @@ export default {
     }
 
     const onMinuteChange = (e) => {
+      if (props.content?.readonly) return
       emitChange(parsed.value.hours24, parseInt(e.target.value, 10))
     }
 
     const onPeriodChange = (e) => {
+      if (props.content?.readonly) return
       let h = parsed.value.hours24
       if (e.target.value === 'PM' && h < 12) h += 12
       if (e.target.value === 'AM' && h >= 12) h -= 12
       emitChange(h, parsed.value.minutes)
     }
 
+    // — Typography: merge WeWeb typography binding with fallback colors/border
+    const fontStyle = computed(() => {
+      const typo = props.content?.typography
+      if (typo) return typo
+      return {}
+    })
+
     // — Styles
     const rootStyle = computed(() => ({
       gap: props.content?.gap || '6px',
+      opacity: props.content?.readonly ? 0.6 : 1,
     }))
 
     const selectStyle = computed(() => ({
-      fontFamily: props.content?.fontFamily || 'inherit',
-      fontSize: props.content?.fontSize || '14px',
-      fontWeight: props.content?.fontWeight || '400',
+      ...fontStyle.value,
       color: props.content?.textColor || '#1a1a1a',
       backgroundColor: props.content?.backgroundColor || '#ffffff',
       border: `${props.content?.borderWidth || '1px'} solid ${props.content?.borderColor || '#d1d5db'}`,
@@ -147,12 +199,18 @@ export default {
 
     const separatorStyle = computed(() => ({
       color: props.content?.separatorColor || '#1a1a1a',
-      fontWeight: props.content?.fontWeight || '400',
-      fontSize: props.content?.fontSize || '14px',
-      fontFamily: props.content?.fontFamily || 'inherit',
+      ...(fontStyle.value.fontSize ? { fontSize: fontStyle.value.fontSize } : {}),
+      ...(fontStyle.value.fontWeight ? { fontWeight: fontStyle.value.fontWeight } : {}),
+      ...(fontStyle.value.fontFamily ? { fontFamily: fontStyle.value.fontFamily } : {}),
+    }))
+
+    const placeholderStyle = computed(() => ({
+      ...fontStyle.value,
+      color: props.content?.placeholderColor || '#9ca3af',
     }))
 
     return {
+      isEmpty,
       is12h,
       period,
       displayHour,
@@ -165,6 +223,7 @@ export default {
       rootStyle,
       selectStyle,
       separatorStyle,
+      placeholderStyle,
     }
   },
 }
@@ -174,6 +233,7 @@ export default {
 .ww-time-picker {
   display: inline-flex;
   align-items: center;
+  position: relative;
 }
 
 .ww-time-picker select {
@@ -188,8 +248,30 @@ export default {
   box-shadow: none;
 }
 
+.ww-time-picker select:disabled {
+  cursor: not-allowed;
+}
+
 .separator {
   font-weight: bold;
   user-select: none;
+}
+
+/* Placeholder: visible text overlaid, ghost select invisible but interactive */
+.ww-time-picker__placeholder {
+  pointer-events: none;
+}
+
+.ww-time-picker__ghost {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
 }
 </style>

@@ -5,6 +5,9 @@ export default {
     },
     icon: 'clock',
   },
+
+  states: ['filled', 'readonly'],
+
   triggerEvents: [
     {
       name: 'change',
@@ -13,8 +16,9 @@ export default {
       default: true,
     },
   ],
+
   properties: {
-    // — Data
+    // — Settings
     locale: {
       label: { en: 'Locale' },
       type: 'Text',
@@ -32,45 +36,60 @@ export default {
       label: { en: 'Initial value (HH:mm)' },
       type: 'Text',
       section: 'settings',
-      defaultValue: '09:00',
+      defaultValue: '',
       bindable: true,
       /* wwEditor:start */
       bindingValidation: {
         type: 'string',
-        tooltip: 'Time string in HH:mm format, e.g. "09:00"',
+        tooltip: 'Time string in HH:mm format, e.g. "09:00". Leave empty to show placeholder.',
+      },
+      /* wwEditor:end */
+    },
+    placeholder: {
+      label: { en: 'Placeholder' },
+      type: 'Text',
+      section: 'settings',
+      defaultValue: '--:--',
+      bindable: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: 'string',
+        tooltip: 'Text shown when no time is selected',
+      },
+      /* wwEditor:end */
+    },
+    required: {
+      label: { en: 'Required' },
+      type: 'OnOff',
+      section: 'settings',
+      defaultValue: false,
+      bindable: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: 'boolean',
+        tooltip: 'Mark field as required in a form container',
+      },
+      /* wwEditor:end */
+    },
+    readonly: {
+      label: { en: 'Read only' },
+      type: 'OnOff',
+      section: 'settings',
+      defaultValue: false,
+      bindable: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: 'boolean',
+        tooltip: 'Prevent the user from changing the value',
       },
       /* wwEditor:end */
     },
 
     // — Typography
-    fontFamily: {
-      label: { en: 'Font family' },
-      type: 'Text',
+    typography: {
+      label: { en: 'Typography' },
+      type: 'Typography',
       section: 'style',
-      defaultValue: 'inherit',
-      bindable: true,
-    },
-    fontSize: {
-      label: { en: 'Font size' },
-      type: 'Length',
-      section: 'style',
-      defaultValue: '14px',
-      bindable: true,
-    },
-    fontWeight: {
-      label: { en: 'Font weight' },
-      type: 'TextSelect',
-      section: 'style',
-      options: {
-        options: [
-          { value: '300', label: 'Light' },
-          { value: '400', label: 'Regular' },
-          { value: '500', label: 'Medium' },
-          { value: '600', label: 'Semi-bold' },
-          { value: '700', label: 'Bold' },
-        ],
-      },
-      defaultValue: '400',
       bindable: true,
     },
 
@@ -83,10 +102,17 @@ export default {
       bindable: true,
     },
     backgroundColor: {
-      label: { en: 'Background color' },
+      label: { en: 'Background' },
       type: 'Color',
       section: 'style',
       defaultValue: '#ffffff',
+      bindable: true,
+    },
+    placeholderColor: {
+      label: { en: 'Placeholder color' },
+      type: 'Color',
+      section: 'style',
+      defaultValue: '#9ca3af',
       bindable: true,
     },
     separatorColor: {
