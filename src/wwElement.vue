@@ -175,11 +175,20 @@ export default {
       emitChange(h, parsed.value.minutes)
     }
 
-    // — Typography: merge WeWeb typography binding with fallback colors/border
+    // — Typography: extract only valid CSS properties from WeWeb typography object
     const fontStyle = computed(() => {
       const typo = props.content?.typography
-      if (typo) return typo
-      return {}
+      if (!typo) return {}
+      const css = {}
+      if (typo.fontFamily)    css.fontFamily    = typo.fontFamily
+      if (typo.fontSize)      css.fontSize      = typo.fontSize
+      if (typo.fontWeight)    css.fontWeight    = typo.fontWeight
+      if (typo.fontStyle)     css.fontStyle     = typo.fontStyle
+      if (typo.lineHeight)    css.lineHeight    = typo.lineHeight
+      if (typo.letterSpacing) css.letterSpacing = typo.letterSpacing
+      if (typo.textTransform) css.textTransform = typo.textTransform
+      if (typo.textDecoration)css.textDecoration= typo.textDecoration
+      return css
     })
 
     // — Styles
