@@ -1,67 +1,136 @@
 <template>
-  <div class="ww-time-picker" :style="rootStyle">
-    <!-- Placeholder display when no value is set -->
+  <div ref="pickerRef" class="ww-time-picker" :style="rootStyle">
+
+    <!-- ─── Placeholder state ─────────────────────────────────────── -->
     <template v-if="isEmpty">
       <span class="ww-time-picker__placeholder" :style="placeholderStyle">
         {{ content?.placeholder || '--:--' }}
       </span>
-      <!-- Hidden selects to allow interaction and break out of placeholder state -->
-      <select
-        class="ww-time-picker__ghost"
+      <button
+        class="ww-time-picker__ghost-btn"
         :disabled="content?.readonly"
-        @change="onHourChange"
-        :required="content?.required"
-      >
-        <option value="" disabled selected />
-        <option v-for="h in hourOptions" :key="h.value" :value="h.value">
-          {{ h.label }}
-        </option>
-      </select>
+        type="button"
+        aria-label="Select time"
+        @click="activateFromPlaceholder"
+      />
     </template>
 
-    <!-- Normal display when a value is set -->
+    <!-- ─── Filled state ──────────────────────────────────────────── -->
     <template v-else>
-      <select
-        :value="displayHour"
-        :disabled="content?.readonly"
-        :required="content?.required"
-        :style="selectStyle"
-        @change="onHourChange"
-      >
-        <option v-for="h in hourOptions" :key="h.value" :value="h.value">
-          {{ h.label }}
-        </option>
-      </select>
+
+      <!-- Hour -->
+      <div class="tp-select" :class="{ 'is-open': openDropdown === 'hour', 'is-disabled': content?.readonly }">
+        <button
+          class="tp-select__btn"
+          :style="selectStyle"
+          :disabled="content?.readonly"
+          type="button"
+          @click.stop="toggleDropdown('hour')"
+        >
+          {{ displayHour }}
+          <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true">
+            <path d="M0 0l5 6 5-6z" fill="currentColor" />
+          </svg>
+        </button>
+        <ul
+          v-if="openDropdown === 'hour'"
+          ref="hourListRef"
+          class="tp-select__list"
+          :style="listStyle"
+          role="listbox"
+        >
+          <li
+            v-for="h in hourOptions"
+            :key="h.value"
+            class="tp-select__item"
+            :class="{ 'is-active': h.value === displayHour }"
+            :style="h.value === displayHour ? activeItemStyle : {}"
+            role="option"
+            :aria-selected="h.value === displayHour"
+            @click.stop="selectHour(h.value)"
+          >{{ h.label }}</li>
+        </ul>
+      </div>
 
       <span class="separator" :style="separatorStyle">:</span>
 
-      <select
-        :value="displayMinute"
-        :disabled="content?.readonly"
-        :style="selectStyle"
-        @change="onMinuteChange"
-      >
-        <option v-for="m in minuteOptions" :key="m" :value="m">
-          {{ m }}
-        </option>
-      </select>
+      <!-- Minute -->
+      <div class="tp-select" :class="{ 'is-open': openDropdown === 'minute', 'is-disabled': content?.readonly }">
+        <button
+          class="tp-select__btn"
+          :style="selectStyle"
+          :disabled="content?.readonly"
+          type="button"
+          @click.stop="toggleDropdown('minute')"
+        >
+          {{ displayMinute }}
+          <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true">
+            <path d="M0 0l5 6 5-6z" fill="currentColor" />
+          </svg>
+        </button>
+        <ul
+          v-if="openDropdown === 'minute'"
+          ref="minuteListRef"
+          class="tp-select__list"
+          :style="listStyle"
+          role="listbox"
+        >
+          <li
+            v-for="m in minuteOptions"
+            :key="m"
+            class="tp-select__item"
+            :class="{ 'is-active': m === displayMinute }"
+            :style="m === displayMinute ? activeItemStyle : {}"
+            role="option"
+            :aria-selected="m === displayMinute"
+            @click.stop="selectMinute(m)"
+          >{{ m }}</li>
+        </ul>
+      </div>
 
-      <select
+      <!-- Period AM/PM — 12h locale only -->
+      <div
         v-if="is12h"
-        :value="period"
-        :disabled="content?.readonly"
-        :style="selectStyle"
-        @change="onPeriodChange"
+        class="tp-select"
+        :class="{ 'is-open': openDropdown === 'period', 'is-disabled': content?.readonly }"
       >
-        <option value="AM">AM</option>
-        <option value="PM">PM</option>
-      </select>
+        <button
+          class="tp-select__btn"
+          :style="selectStyle"
+          :disabled="content?.readonly"
+          type="button"
+          @click.stop="toggleDropdown('period')"
+        >
+          {{ period }}
+          <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true">
+            <path d="M0 0l5 6 5-6z" fill="currentColor" />
+          </svg>
+        </button>
+        <ul
+          v-if="openDropdown === 'period'"
+          class="tp-select__list"
+          :style="listStyle"
+          role="listbox"
+        >
+          <li
+            v-for="p in ['AM', 'PM']"
+            :key="p"
+            class="tp-select__item"
+            :class="{ 'is-active': p === period }"
+            :style="p === period ? activeItemStyle : {}"
+            role="option"
+            :aria-selected="p === period"
+            @click.stop="selectPeriod(p)"
+          >{{ p }}</li>
+        </ul>
+      </div>
+
     </template>
   </div>
 </template>
 
 <script>
-import { computed, watch } from 'vue'
+import { computed, watch, ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 
 export default {
   name: 'CustomTimePicker',
@@ -86,7 +155,6 @@ export default {
         defaultValue: props.content?.initialValue || '',
       })
 
-    // Sync when initialValue binding changes
     watch(
       () => props.content?.initialValue,
       (newVal) => {
@@ -95,10 +163,15 @@ export default {
       { immediate: true }
     )
 
-    // — State: is the field empty (placeholder mode)?
+    // — Dropdown state
+    const pickerRef = ref(null)
+    const openDropdown = ref(null)
+    const hourListRef = ref(null)
+    const minuteListRef = ref(null)
+
+    // — Derived state
     const isEmpty = computed(() => !internalValue.value)
 
-    // — Helpers
     const is12h = computed(() => {
       const locale = (props.content?.locale || 'fr').toLowerCase()
       return locale.startsWith('en-us') || locale === 'en'
@@ -113,9 +186,7 @@ export default {
       }
     })
 
-    const period = computed(() =>
-      parsed.value.hours24 >= 12 ? 'PM' : 'AM'
-    )
+    const period = computed(() => (parsed.value.hours24 >= 12 ? 'PM' : 'AM'))
 
     const displayHour = computed(() => {
       if (!is12h.value) return String(parsed.value.hours24).padStart(2, '0')
@@ -140,7 +211,6 @@ export default {
       })
     })
 
-    // Steps of 5 minutes
     const minuteOptions = computed(() =>
       Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'))
     )
@@ -152,27 +222,73 @@ export default {
       emit('trigger-event', { name: 'change', event: { value } })
     }
 
-    const onHourChange = (e) => {
+    // — Dropdown controls
+    const toggleDropdown = (name) => {
       if (props.content?.readonly) return
-      let h = parseInt(e.target.value, 10)
+      openDropdown.value = openDropdown.value === name ? null : name
+    }
+
+    const closeDropdown = () => {
+      openDropdown.value = null
+    }
+
+    const activateFromPlaceholder = () => {
+      if (props.content?.readonly) return
+      emitChange(0, 0)
+      nextTick(() => { openDropdown.value = 'hour' })
+    }
+
+    // Scroll active item into view when dropdown opens
+    watch(openDropdown, async (val) => {
+      if (!val) return
+      await nextTick()
+      const listRef = val === 'hour' ? hourListRef.value : val === 'minute' ? minuteListRef.value : null
+      if (listRef) {
+        const active = listRef.querySelector('.is-active')
+        if (active) active.scrollIntoView({ block: 'nearest' })
+      }
+    })
+
+    // Close on outside click
+    const handleOutsideClick = (e) => {
+      if (pickerRef.value && !pickerRef.value.contains(e.target)) {
+        closeDropdown()
+      }
+    }
+
+    onMounted(() => {
+      wwLib.getFrontDocument().addEventListener('click', handleOutsideClick)
+    })
+
+    onBeforeUnmount(() => {
+      wwLib.getFrontDocument().removeEventListener('click', handleOutsideClick)
+    })
+
+    // — Selection handlers
+    const selectHour = (val) => {
+      if (props.content?.readonly) return
+      let h = parseInt(val, 10)
       if (is12h.value) {
         if (period.value === 'PM' && h !== 12) h += 12
         if (period.value === 'AM' && h === 12) h = 0
       }
       emitChange(h, parsed.value.minutes)
+      closeDropdown()
     }
 
-    const onMinuteChange = (e) => {
+    const selectMinute = (val) => {
       if (props.content?.readonly) return
-      emitChange(parsed.value.hours24, parseInt(e.target.value, 10))
+      emitChange(parsed.value.hours24, parseInt(val, 10))
+      closeDropdown()
     }
 
-    const onPeriodChange = (e) => {
+    const selectPeriod = (val) => {
       if (props.content?.readonly) return
       let h = parsed.value.hours24
-      if (e.target.value === 'PM' && h < 12) h += 12
-      if (e.target.value === 'AM' && h >= 12) h -= 12
+      if (val === 'PM' && h < 12) h += 12
+      if (val === 'AM' && h >= 12) h -= 12
       emitChange(h, parsed.value.minutes)
+      closeDropdown()
     }
 
     // — Typography: extract only valid CSS properties from WeWeb typography object
@@ -180,14 +296,14 @@ export default {
       const typo = props.content?.typography
       if (!typo) return {}
       const css = {}
-      if (typo.fontFamily)    css.fontFamily    = typo.fontFamily
-      if (typo.fontSize)      css.fontSize      = typo.fontSize
-      if (typo.fontWeight)    css.fontWeight    = typo.fontWeight
-      if (typo.fontStyle)     css.fontStyle     = typo.fontStyle
-      if (typo.lineHeight)    css.lineHeight    = typo.lineHeight
-      if (typo.letterSpacing) css.letterSpacing = typo.letterSpacing
-      if (typo.textTransform) css.textTransform = typo.textTransform
-      if (typo.textDecoration)css.textDecoration= typo.textDecoration
+      if (typo.fontFamily)     css.fontFamily    = typo.fontFamily
+      if (typo.fontSize)       css.fontSize      = typo.fontSize
+      if (typo.fontWeight)     css.fontWeight    = typo.fontWeight
+      if (typo.fontStyle)      css.fontStyle     = typo.fontStyle
+      if (typo.lineHeight)     css.lineHeight    = typo.lineHeight
+      if (typo.letterSpacing)  css.letterSpacing = typo.letterSpacing
+      if (typo.textTransform)  css.textTransform = typo.textTransform
+      if (typo.textDecoration) css.textDecoration = typo.textDecoration
       return css
     })
 
@@ -208,7 +324,7 @@ export default {
 
     const separatorStyle = computed(() => ({
       color: props.content?.separatorColor || '#1a1a1a',
-      ...(fontStyle.value.fontSize ? { fontSize: fontStyle.value.fontSize } : {}),
+      ...(fontStyle.value.fontSize   ? { fontSize:   fontStyle.value.fontSize }   : {}),
       ...(fontStyle.value.fontWeight ? { fontWeight: fontStyle.value.fontWeight } : {}),
       ...(fontStyle.value.fontFamily ? { fontFamily: fontStyle.value.fontFamily } : {}),
     }))
@@ -218,6 +334,23 @@ export default {
       color: props.content?.placeholderColor || '#9ca3af',
     }))
 
+    const listStyle = computed(() => ({
+      ...fontStyle.value,
+      color: props.content?.textColor || '#1a1a1a',
+      backgroundColor: props.content?.backgroundColor || '#ffffff',
+      border: `${props.content?.borderWidth || '1px'} solid ${props.content?.borderColor || '#d1d5db'}`,
+      borderRadius: props.content?.borderRadius || '6px',
+    }))
+
+    const activeItemStyle = computed(() => {
+      const accent = props.content?.accentColor || '#3b82f6'
+      return {
+        color: accent,
+        backgroundColor: `${accent}1a`,
+        fontWeight: '600',
+      }
+    })
+
     return {
       isEmpty,
       is12h,
@@ -226,13 +359,21 @@ export default {
       displayMinute,
       hourOptions,
       minuteOptions,
-      onHourChange,
-      onMinuteChange,
-      onPeriodChange,
+      openDropdown,
+      pickerRef,
+      hourListRef,
+      minuteListRef,
+      toggleDropdown,
+      activateFromPlaceholder,
+      selectHour,
+      selectMinute,
+      selectPeriod,
       rootStyle,
       selectStyle,
       separatorStyle,
       placeholderStyle,
+      listStyle,
+      activeItemStyle,
     }
   },
 }
@@ -242,45 +383,114 @@ export default {
 .ww-time-picker {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   position: relative;
 }
 
-.ww-time-picker select {
+/* ─── Custom dropdown ─────────────────────────────── */
+.tp-select {
+  position: relative;
+  display: inline-flex;
+}
+
+.tp-select__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  -moz-appearance: none;
+  border: none;
+  background: none;
+  font: inherit;
+  line-height: inherit;
+  /* visual styling comes from :style binding */
 }
 
-.ww-time-picker select:focus {
+.tp-select__btn:focus {
   outline: none;
-  box-shadow: none;
 }
 
-.ww-time-picker select:disabled {
+.tp-select__btn:disabled {
   cursor: not-allowed;
 }
 
+.tp-select__arrow {
+  flex-shrink: 0;
+  opacity: 0.45;
+  transition: transform 0.15s ease;
+}
+
+.is-open .tp-select__arrow {
+  transform: rotate(180deg);
+}
+
+.tp-select__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  min-width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.tp-select__list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tp-select__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tp-select__list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.tp-select__item {
+  padding: 6px 14px;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+  transition: background 0.1s;
+}
+
+.tp-select__item:hover:not(.is-active) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* ─── Separator ───────────────────────────────────── */
 .separator {
   font-weight: bold;
   user-select: none;
 }
 
-/* Placeholder: visible text overlaid, ghost select invisible but interactive */
+/* ─── Placeholder ─────────────────────────────────── */
 .ww-time-picker__placeholder {
   pointer-events: none;
 }
 
-.ww-time-picker__ghost {
+.ww-time-picker__ghost-btn {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   opacity: 0;
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
   border: none;
   background: transparent;
+}
+
+.ww-time-picker__ghost-btn:disabled {
+  cursor: not-allowed;
 }
 </style>

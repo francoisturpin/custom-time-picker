@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time Picker — Aperçu</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 28px;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: #1d4ed8;
+      color: #bfdbfe;
+      font-weight: 500;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── Preview area ─────────────────────────────────── */
+    .preview-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      gap: 28px;
+    }
+
+    .stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .stage-label {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .canvas {
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 36px 48px;
+      width: 100%;
+      max-width: 460px;
+      transition: background 0.3s;
+      position: relative;
+    }
+    .canvas--light { background: #f8fafc; }
+    .canvas--dark  { background: #1e293b; }
+
+    .event-log {
+      font-size: 12px;
+      color: #94a3b8;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 8px 14px;
+      min-width: 280px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .event-log strong { color: #38bdf8; }
+
+    /* ── Controls panel ───────────────────────────────── */
+    .controls {
+      border-left: 1px solid #1e293b;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #475569;
+      font-weight: 700;
+      padding: 8px 0 4px;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 0;
+    }
+
+    .control-row label {
+      font-size: 12px;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+
+    .control-row input[type="text"],
+    .control-row input[type="number"],
+    .control-row select {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      border-radius: 5px;
+      padding: 4px 8px;
+      font-size: 12px;
+      width: 130px;
+      outline: none;
+    }
+
+    .control-row input[type="color"] {
+      width: 32px;
+      height: 26px;
+      border: 1px solid #334155;
+      border-radius: 5px;
+      background: none;
+      cursor: pointer;
+      padding: 1px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 34px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #334155;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 12px; height: 12px;
+      left: 3px; top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: #2563eb; }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+    .reset-btn {
+      margin-top: 8px;
+      width: 100%;
+      padding: 8px;
+      background: #1e3a5f;
+      border: 1px solid #2563eb;
+      color: #60a5fa;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .reset-btn:hover { background: #1e40af; }
+
+    /* ── Time Picker component styles ─────────────────── */
+    .ww-time-picker {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .tp-select {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .tp-select__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      border: none;
+      background: none;
+      font: inherit;
+      line-height: inherit;
+    }
+
+    .tp-select__btn:focus { outline: none; }
+    .tp-select__btn:disabled { cursor: not-allowed; }
+
+    .tp-select__arrow {
+      flex-shrink: 0;
+      opacity: 0.45;
+      transition: transform 0.15s ease;
+    }
+
+    .is-open .tp-select__arrow {
+      transform: rotate(180deg);
+    }
+
+    .tp-select__list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      list-style: none;
+      padding: 4px 0;
+      min-width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0,0,0,0.2) transparent;
+    }
+
+    .tp-select__list::-webkit-scrollbar { width: 4px; }
+    .tp-select__list::-webkit-scrollbar-track { background: transparent; }
+    .tp-select__list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+
+    .tp-select__item {
+      padding: 6px 14px;
+      cursor: pointer;
+      text-align: center;
+      white-space: nowrap;
+      user-select: none;
+      transition: background 0.1s;
+    }
+
+    .tp-select__item:hover:not(.is-active) {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .separator {
+      font-weight: bold;
+      user-select: none;
+    }
+
+    .ww-time-picker__placeholder {
+      pointer-events: none;
+    }
+
+    .ww-time-picker__ghost-btn {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+    }
+
+    .ww-time-picker__ghost-btn:disabled { cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Custom Time Picker</h1>
+  <span class="badge">WeWeb Component</span>
+</header>
+
+<div class="layout">
+
+  <!-- ── Preview ─────────────────────────────────────── -->
+  <div class="preview-area">
+
+    <div class="stage">
+      <span class="stage-label">Fond clair</span>
+      <div class="canvas canvas--light">
+        <time-picker uid="p1" :content="config" @trigger-event="onEvent" />
+      </div>
+    </div>
+
+    <div class="stage">
+      <span class="stage-label">Fond sombre</span>
+      <div class="canvas canvas--dark">
+        <time-picker uid="p2" :content="darkConfig" @trigger-event="onEvent" />
+      </div>
+    </div>
+
+    <div class="event-log">
+      <template v-if="lastEvent">
+        Événement : <strong>{{ lastEvent }}</strong>
+      </template>
+      <template v-else>
+        Aucun événement — interagissez avec le composant
+      </template>
+    </div>
+  </div>
+
+  <!-- ── Controls ─────────────────────────────────────── -->
+  <div class="controls">
+
+    <div class="section-title">Paramètres</div>
+
+    <div class="control-row">
+      <label>Locale</label>
+      <select v-model="config.locale">
+        <option value="fr">fr (24h)</option>
+        <option value="en">en (12h)</option>
+        <option value="en-US">en-US (12h)</option>
+      </select>
+    </div>
+
+    <div class="control-row">
+      <label>Valeur initiale</label>
+      <input type="text" v-model="config.initialValue" placeholder="HH:mm" maxlength="5" />
+    </div>
+
+    <div class="control-row">
+      <label>Placeholder</label>
+      <input type="text" v-model="config.placeholder" />
+    </div>
+
+    <div class="control-row">
+      <label>Read only</label>
+      <label class="toggle">
+        <input type="checkbox" v-model="config.readonly" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="section-title">Couleurs</div>
+
+    <div class="control-row">
+      <label>Texte</label>
+      <input type="color" v-model="config.textColor" />
+    </div>
+
+    <div class="control-row">
+      <label>Fond</label>
+      <input type="color" v-model="config.backgroundColor" />
+    </div>
+
+    <div class="control-row">
+      <label>Placeholder</label>
+      <input type="color" v-model="config.placeholderColor" />
+    </div>
+
+    <div class="control-row">
+      <label>Séparateur</label>
+      <input type="color" v-model="config.separatorColor" />
+    </div>
+
+    <div class="control-row">
+      <label>Bordure</label>
+      <input type="color" v-model="config.borderColor" />
+    </div>
+
+    <div class="control-row">
+      <label>Accent</label>
+      <input type="color" v-model="config.accentColor" />
+    </div>
+
+    <div class="section-title">Dimensions</div>
+
+    <div class="control-row">
+      <label>Border width</label>
+      <input type="text" v-model="config.borderWidth" placeholder="1px" />
+    </div>
+
+    <div class="control-row">
+      <label>Border radius</label>
+      <input type="text" v-model="config.borderRadius" placeholder="6px" />
+    </div>
+
+    <div class="control-row">
+      <label>Padding</label>
+      <input type="text" v-model="config.padding" placeholder="6px 10px" />
+    </div>
+
+    <div class="control-row">
+      <label>Gap</label>
+      <input type="text" v-model="config.gap" placeholder="6px" />
+    </div>
+
+    <button class="reset-btn" @click="reset">Réinitialiser</button>
+  </div>
+</div>
+
+<script>
+  const { createApp, reactive, ref, computed, watch, onMounted, onBeforeUnmount, nextTick } = Vue;
+
+  // ── Time Picker component ────────────────────────────
+  const TimePicker = {
+    template: `
+      <div ref="pickerRef" class="ww-time-picker" :style="rootStyle">
+        <template v-if="isEmpty">
+          <span class="ww-time-picker__placeholder" :style="placeholderStyle">
+            {{ content?.placeholder || '--:--' }}
+          </span>
+          <button class="ww-time-picker__ghost-btn" :disabled="content?.readonly" type="button" @click="activateFromPlaceholder" />
+        </template>
+        <template v-else>
+          <div class="tp-select" :class="{ 'is-open': openDropdown === 'hour', 'is-disabled': content?.readonly }">
+            <button class="tp-select__btn" :style="selectStyle" :disabled="content?.readonly" type="button" @click.stop="toggleDropdown('hour')">
+              {{ displayHour }}
+              <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M0 0l5 6 5-6z" fill="currentColor"/></svg>
+            </button>
+            <ul v-if="openDropdown === 'hour'" ref="hourListRef" class="tp-select__list" :style="listStyle" role="listbox">
+              <li v-for="h in hourOptions" :key="h.value" class="tp-select__item" :class="{ 'is-active': h.value === displayHour }" :style="h.value === displayHour ? activeItemStyle : {}" role="option" @click.stop="selectHour(h.value)">{{ h.label }}</li>
+            </ul>
+          </div>
+          <span class="separator" :style="separatorStyle">:</span>
+          <div class="tp-select" :class="{ 'is-open': openDropdown === 'minute', 'is-disabled': content?.readonly }">
+            <button class="tp-select__btn" :style="selectStyle" :disabled="content?.readonly" type="button" @click.stop="toggleDropdown('minute')">
+              {{ displayMinute }}
+              <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M0 0l5 6 5-6z" fill="currentColor"/></svg>
+            </button>
+            <ul v-if="openDropdown === 'minute'" ref="minuteListRef" class="tp-select__list" :style="listStyle" role="listbox">
+              <li v-for="m in minuteOptions" :key="m" class="tp-select__item" :class="{ 'is-active': m === displayMinute }" :style="m === displayMinute ? activeItemStyle : {}" role="option" @click.stop="selectMinute(m)">{{ m }}</li>
+            </ul>
+          </div>
+          <div v-if="is12h" class="tp-select" :class="{ 'is-open': openDropdown === 'period', 'is-disabled': content?.readonly }">
+            <button class="tp-select__btn" :style="selectStyle" :disabled="content?.readonly" type="button" @click.stop="toggleDropdown('period')">
+              {{ period }}
+              <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M0 0l5 6 5-6z" fill="currentColor"/></svg>
+            </button>
+            <ul v-if="openDropdown === 'period'" class="tp-select__list" :style="listStyle" role="listbox">
+              <li v-for="p in ['AM','PM']" :key="p" class="tp-select__item" :class="{ 'is-active': p === period }" :style="p === period ? activeItemStyle : {}" role="option" @click.stop="selectPeriod(p)">{{ p }}</li>
+            </ul>
+          </div>
+        </template>
+      </div>
+    `,
+    props: {
+      uid:     { type: String, default: 'preview' },
+      content: { type: Object, default: () => ({}) },
+    },
+    emits: ['trigger-event'],
+    setup(props, { emit }) {
+      const _val = ref(props.content?.initialValue || '');
+      watch(() => props.content?.initialValue, (v) => { if (v !== undefined) _val.value = v; }, { immediate: true });
+      const internalValue  = _val;
+      const setInternalValue = (v) => { _val.value = v; };
+
+      const pickerRef    = ref(null);
+      const openDropdown = ref(null);
+      const hourListRef  = ref(null);
+      const minuteListRef= ref(null);
+
+      const isEmpty = computed(() => !internalValue.value);
+
+      const is12h = computed(() => {
+        const l = (props.content?.locale || 'fr').toLowerCase();
+        return l.startsWith('en-us') || l === 'en';
+      });
+
+      const parsed = computed(() => {
+        const [h, m] = (internalValue.value || '00:00').split(':');
+        return { hours24: parseInt(h, 10) || 0, minutes: parseInt(m, 10) || 0 };
+      });
+
+      const period       = computed(() => parsed.value.hours24 >= 12 ? 'PM' : 'AM');
+      const displayHour  = computed(() => {
+        if (!is12h.value) return String(parsed.value.hours24).padStart(2, '0');
+        const h = parsed.value.hours24 % 12;
+        return String(h === 0 ? 12 : h).padStart(2, '0');
+      });
+      const displayMinute= computed(() => String(parsed.value.minutes).padStart(2, '0'));
+
+      const hourOptions = computed(() => {
+        if (is12h.value)
+          return Array.from({ length: 12 }, (_, i) => { const v = String(i+1).padStart(2,'0'); return { value: v, label: v }; });
+        return Array.from({ length: 24 }, (_, i) => { const v = String(i).padStart(2,'0'); return { value: v, label: v }; });
+      });
+
+      const minuteOptions = computed(() =>
+        Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'))
+      );
+
+      const emitChange = (hours24, minutes) => {
+        const value = `${String(hours24).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;
+        setInternalValue(value);
+        emit('trigger-event', { name: 'change', event: { value } });
+      };
+
+      const toggleDropdown = (name) => {
+        if (props.content?.readonly) return;
+        openDropdown.value = openDropdown.value === name ? null : name;
+      };
+      const closeDropdown = () => { openDropdown.value = null; };
+
+      const activateFromPlaceholder = () => {
+        if (props.content?.readonly) return;
+        emitChange(0, 0);
+        nextTick(() => { openDropdown.value = 'hour'; });
+      };
+
+      watch(openDropdown, async (val) => {
+        if (!val) return;
+        await nextTick();
+        const listRef = val === 'hour' ? hourListRef.value : val === 'minute' ? minuteListRef.value : null;
+        if (listRef) { const a = listRef.querySelector('.is-active'); if (a) a.scrollIntoView({ block: 'nearest' }); }
+      });
+
+      const handleOutsideClick = (e) => {
+        if (pickerRef.value && !pickerRef.value.contains(e.target)) closeDropdown();
+      };
+      onMounted(()        => { document.addEventListener('click', handleOutsideClick); });
+      onBeforeUnmount(()  => { document.removeEventListener('click', handleOutsideClick); });
+
+      const selectHour = (val) => {
+        if (props.content?.readonly) return;
+        let h = parseInt(val, 10);
+        if (is12h.value) {
+          if (period.value === 'PM' && h !== 12) h += 12;
+          if (period.value === 'AM' && h === 12) h = 0;
+        }
+        emitChange(h, parsed.value.minutes);
+        closeDropdown();
+      };
+      const selectMinute = (val) => {
+        if (props.content?.readonly) return;
+        emitChange(parsed.value.hours24, parseInt(val, 10));
+        closeDropdown();
+      };
+      const selectPeriod = (val) => {
+        if (props.content?.readonly) return;
+        let h = parsed.value.hours24;
+        if (val === 'PM' && h < 12) h += 12;
+        if (val === 'AM' && h >= 12) h -= 12;
+        emitChange(h, parsed.value.minutes);
+        closeDropdown();
+      };
+
+      const fontStyle = computed(() => {
+        const t = props.content?.typography;
+        if (!t) return {};
+        const c = {};
+        if (t.fontFamily)    c.fontFamily    = t.fontFamily;
+        if (t.fontSize)      c.fontSize      = t.fontSize;
+        if (t.fontWeight)    c.fontWeight    = t.fontWeight;
+        if (t.fontStyle)     c.fontStyle     = t.fontStyle;
+        if (t.lineHeight)    c.lineHeight    = t.lineHeight;
+        if (t.letterSpacing) c.letterSpacing = t.letterSpacing;
+        if (t.textTransform) c.textTransform = t.textTransform;
+        if (t.textDecoration)c.textDecoration= t.textDecoration;
+        return c;
+      });
+
+      const rootStyle = computed(() => ({
+        gap:     props.content?.gap     || '6px',
+        opacity: props.content?.readonly ? 0.6 : 1,
+      }));
+
+      const selectStyle = computed(() => ({
+        ...fontStyle.value,
+        color:           props.content?.textColor        || '#1a1a1a',
+        backgroundColor: props.content?.backgroundColor  || '#ffffff',
+        border:          `${props.content?.borderWidth   || '1px'} solid ${props.content?.borderColor || '#d1d5db'}`,
+        borderRadius:    props.content?.borderRadius     || '6px',
+        padding:         props.content?.padding          || '6px 10px',
+      }));
+
+      const separatorStyle = computed(() => ({
+        color: props.content?.separatorColor || '#1a1a1a',
+        ...(fontStyle.value.fontSize   ? { fontSize:   fontStyle.value.fontSize }   : {}),
+        ...(fontStyle.value.fontWeight ? { fontWeight: fontStyle.value.fontWeight } : {}),
+        ...(fontStyle.value.fontFamily ? { fontFamily: fontStyle.value.fontFamily } : {}),
+      }));
+
+      const placeholderStyle = computed(() => ({
+        ...fontStyle.value,
+        color: props.content?.placeholderColor || '#9ca3af',
+      }));
+
+      const listStyle = computed(() => ({
+        ...fontStyle.value,
+        color:           props.content?.textColor       || '#1a1a1a',
+        backgroundColor: props.content?.backgroundColor || '#ffffff',
+        border:          `${props.content?.borderWidth  || '1px'} solid ${props.content?.borderColor || '#d1d5db'}`,
+        borderRadius:    props.content?.borderRadius    || '6px',
+      }));
+
+      const activeItemStyle = computed(() => {
+        const accent = props.content?.accentColor || '#3b82f6';
+        return { color: accent, backgroundColor: `${accent}1a`, fontWeight: '600' };
+      });
+
+      return {
+        isEmpty, is12h, period, displayHour, displayMinute, hourOptions, minuteOptions,
+        openDropdown, pickerRef, hourListRef, minuteListRef,
+        toggleDropdown, activateFromPlaceholder, selectHour, selectMinute, selectPeriod,
+        rootStyle, selectStyle, separatorStyle, placeholderStyle, listStyle, activeItemStyle,
+      };
+    },
+  };
+
+  // ── Defaults ─────────────────────────────────────────
+  const DEFAULTS = {
+    locale:          'fr',
+    initialValue:    '',
+    placeholder:     '--:--',
+    readonly:        false,
+    textColor:       '#1a1a1a',
+    backgroundColor: '#ffffff',
+    placeholderColor:'#9ca3af',
+    separatorColor:  '#1a1a1a',
+    borderColor:     '#d1d5db',
+    borderWidth:     '1px',
+    borderRadius:    '6px',
+    padding:         '6px 12px',
+    gap:             '6px',
+    accentColor:     '#3b82f6',
+  };
+
+  // ── App ───────────────────────────────────────────────
+  createApp({
+    components: { TimePicker },
+    template: `
+      <header>
+        <h1>Custom Time Picker</h1>
+        <span class="badge">WeWeb Component — Aperçu local</span>
+      </header>
+      <div class="layout">
+        <div class="preview-area">
+          <div class="stage">
+            <span class="stage-label">Fond clair</span>
+            <div class="canvas canvas--light">
+              <time-picker uid="p1" :content="config" @trigger-event="onEvent" />
+            </div>
+          </div>
+          <div class="stage">
+            <span class="stage-label">Fond sombre (même config)</span>
+            <div class="canvas canvas--dark">
+              <time-picker uid="p2" :content="darkConfig" @trigger-event="onEvent" />
+            </div>
+          </div>
+          <div class="event-log">
+            <template v-if="lastEvent">Événement : <strong>{{ lastEvent }}</strong></template>
+            <template v-else>Aucun événement — interagissez avec le composant</template>
+          </div>
+        </div>
+        <div class="controls">
+          <div class="section-title">Paramètres</div>
+          <div class="control-row">
+            <label>Locale</label>
+            <select v-model="config.locale">
+              <option value="fr">fr (24h)</option>
+              <option value="en">en (12h)</option>
+              <option value="en-US">en-US (12h)</option>
+            </select>
+          </div>
+          <div class="control-row">
+            <label>Valeur initiale</label>
+            <input type="text" v-model="config.initialValue" placeholder="HH:mm" maxlength="5" />
+          </div>
+          <div class="control-row">
+            <label>Placeholder</label>
+            <input type="text" v-model="config.placeholder" />
+          </div>
+          <div class="control-row">
+            <label>Read only</label>
+            <label class="toggle"><input type="checkbox" v-model="config.readonly" /><span class="toggle-slider"></span></label>
+          </div>
+          <div class="section-title">Couleurs</div>
+          <div class="control-row"><label>Texte</label><input type="color" v-model="config.textColor" /></div>
+          <div class="control-row"><label>Fond</label><input type="color" v-model="config.backgroundColor" /></div>
+          <div class="control-row"><label>Placeholder</label><input type="color" v-model="config.placeholderColor" /></div>
+          <div class="control-row"><label>Séparateur</label><input type="color" v-model="config.separatorColor" /></div>
+          <div class="control-row"><label>Bordure</label><input type="color" v-model="config.borderColor" /></div>
+          <div class="control-row"><label>Accent (actif)</label><input type="color" v-model="config.accentColor" /></div>
+          <div class="section-title">Dimensions</div>
+          <div class="control-row"><label>Border width</label><input type="text" v-model="config.borderWidth" placeholder="1px" /></div>
+          <div class="control-row"><label>Border radius</label><input type="text" v-model="config.borderRadius" placeholder="6px" /></div>
+          <div class="control-row"><label>Padding</label><input type="text" v-model="config.padding" placeholder="6px 10px" /></div>
+          <div class="control-row"><label>Gap</label><input type="text" v-model="config.gap" placeholder="6px" /></div>
+          <button class="reset-btn" @click="reset">↺ Réinitialiser</button>
+        </div>
+      </div>
+    `,
+    setup() {
+      const config    = reactive({ ...DEFAULTS });
+      const lastEvent = ref('');
+
+      const darkConfig = computed(() => ({
+        ...config,
+        textColor:       '#f1f5f9',
+        backgroundColor: '#0f172a',
+        separatorColor:  '#94a3b8',
+        borderColor:     '#334155',
+        placeholderColor:'#475569',
+      }));
+
+      const onEvent = (e) => {
+        lastEvent.value = `${e.name} → valeur = "${e.event?.value}"`;
+      };
+
+      const reset = () => {
+        Object.assign(config, DEFAULTS);
+        lastEvent.value = '';
+      };
+
+      return { config, darkConfig, lastEvent, onEvent, reset };
+    },
+  }).mount('body');
+</script>
+</body>
+</html>

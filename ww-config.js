@@ -122,6 +122,13 @@ export default {
       defaultValue: '#1a1a1a',
       bindable: true,
     },
+    accentColor: {
+      label: { en: 'Accent color' },
+      type: 'Color',
+      section: 'style',
+      defaultValue: '#3b82f6',
+      bindable: true,
+    },
 
     // — Border
     borderColor: {
