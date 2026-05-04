@@ -6,8 +6,6 @@ export default {
     icon: 'clock',
   },
 
-  states: ['filled', 'readonly'],
-
   triggerEvents: [
     {
       name: 'change',
@@ -42,19 +40,6 @@ export default {
       bindingValidation: {
         type: 'string',
         tooltip: 'Time string in HH:mm format, e.g. "09:00". Leave empty to show placeholder.',
-      },
-      /* wwEditor:end */
-    },
-    placeholder: {
-      label: { en: 'Placeholder' },
-      type: 'Text',
-      section: 'settings',
-      defaultValue: '--:--',
-      bindable: true,
-      /* wwEditor:start */
-      bindingValidation: {
-        type: 'string',
-        tooltip: 'Text shown when no time is selected',
       },
       /* wwEditor:end */
     },
@@ -109,7 +94,7 @@ export default {
       bindable: true,
     },
     placeholderColor: {
-      label: { en: 'Placeholder color' },
+      label: { en: 'Empty state color' },
       type: 'Color',
       section: 'style',
       defaultValue: '#9ca3af',

@@ -420,42 +420,34 @@
   const TimePicker = {
     template: `
       <div ref="pickerRef" class="ww-time-picker" :class="stateClasses" :style="rootStyle">
-        <template v-if="isEmpty">
-          <span class="ww-time-picker__placeholder" :style="placeholderStyle">
-            {{ content?.placeholder || '--:--' }}
-          </span>
-          <button class="ww-time-picker__ghost-btn" :disabled="content?.readonly" type="button" @click="activateFromPlaceholder" />
-        </template>
-        <template v-else>
-          <div class="tp-select" :class="{ 'is-open': openDropdown === 'hour', 'is-disabled': content?.readonly }">
-            <button class="tp-select__btn" :style="selectStyle" :disabled="content?.readonly" type="button" @click.stop="toggleDropdown('hour')">
-              {{ displayHour }}
-              <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M0 0l5 6 5-6z" fill="currentColor"/></svg>
-            </button>
-            <ul v-if="openDropdown === 'hour'" ref="hourListRef" class="tp-select__list" :style="listStyle" role="listbox">
-              <li v-for="h in hourOptions" :key="h.value" class="tp-select__item" :class="{ 'is-active': h.value === displayHour }" :style="h.value === displayHour ? activeItemStyle : {}" role="option" @click.stop="selectHour(h.value)">{{ h.label }}</li>
-            </ul>
-          </div>
-          <span class="separator" :style="separatorStyle">:</span>
-          <div class="tp-select" :class="{ 'is-open': openDropdown === 'minute', 'is-disabled': content?.readonly }">
-            <button class="tp-select__btn" :style="selectStyle" :disabled="content?.readonly" type="button" @click.stop="toggleDropdown('minute')">
-              {{ displayMinute }}
-              <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M0 0l5 6 5-6z" fill="currentColor"/></svg>
-            </button>
-            <ul v-if="openDropdown === 'minute'" ref="minuteListRef" class="tp-select__list" :style="listStyle" role="listbox">
-              <li v-for="m in minuteOptions" :key="m" class="tp-select__item" :class="{ 'is-active': m === displayMinute }" :style="m === displayMinute ? activeItemStyle : {}" role="option" @click.stop="selectMinute(m)">{{ m }}</li>
-            </ul>
-          </div>
-          <div v-if="is12h" class="tp-select" :class="{ 'is-open': openDropdown === 'period', 'is-disabled': content?.readonly }">
-            <button class="tp-select__btn" :style="selectStyle" :disabled="content?.readonly" type="button" @click.stop="toggleDropdown('period')">
-              {{ period }}
-              <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M0 0l5 6 5-6z" fill="currentColor"/></svg>
-            </button>
-            <ul v-if="openDropdown === 'period'" class="tp-select__list" :style="listStyle" role="listbox">
-              <li v-for="p in ['AM','PM']" :key="p" class="tp-select__item" :class="{ 'is-active': p === period }" :style="p === period ? activeItemStyle : {}" role="option" @click.stop="selectPeriod(p)">{{ p }}</li>
-            </ul>
-          </div>
-        </template>
+        <div class="tp-select" :class="{ 'is-open': openDropdown === 'hour', 'is-disabled': content?.readonly }">
+          <button class="tp-select__btn" :style="selectStyle" :disabled="content?.readonly" type="button" @click.stop="toggleDropdown('hour')">
+            {{ isEmpty ? '--' : displayHour }}
+            <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M0 0l5 6 5-6z" fill="currentColor"/></svg>
+          </button>
+          <ul v-if="openDropdown === 'hour'" ref="hourListRef" class="tp-select__list" :style="listStyle" role="listbox">
+            <li v-for="h in hourOptions" :key="h.value" class="tp-select__item" :class="{ 'is-active': !isEmpty && h.value === displayHour }" :style="!isEmpty && h.value === displayHour ? activeItemStyle : {}" role="option" @click.stop="selectHour(h.value)">{{ h.label }}</li>
+          </ul>
+        </div>
+        <span class="separator" :style="separatorStyle">:</span>
+        <div class="tp-select" :class="{ 'is-open': openDropdown === 'minute', 'is-disabled': content?.readonly }">
+          <button class="tp-select__btn" :style="selectStyle" :disabled="content?.readonly" type="button" @click.stop="toggleDropdown('minute')">
+            {{ isEmpty ? '--' : displayMinute }}
+            <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M0 0l5 6 5-6z" fill="currentColor"/></svg>
+          </button>
+          <ul v-if="openDropdown === 'minute'" ref="minuteListRef" class="tp-select__list" :style="listStyle" role="listbox">
+            <li v-for="m in minuteOptions" :key="m" class="tp-select__item" :class="{ 'is-active': !isEmpty && m === displayMinute }" :style="!isEmpty && m === displayMinute ? activeItemStyle : {}" role="option" @click.stop="selectMinute(m)">{{ m }}</li>
+          </ul>
+        </div>
+        <div v-if="is12h" class="tp-select" :class="{ 'is-open': openDropdown === 'period', 'is-disabled': content?.readonly }">
+          <button class="tp-select__btn" :style="selectStyle" :disabled="content?.readonly" type="button" @click.stop="toggleDropdown('period')">
+            {{ isEmpty ? '--' : period }}
+            <svg class="tp-select__arrow" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M0 0l5 6 5-6z" fill="currentColor"/></svg>
+          </button>
+          <ul v-if="openDropdown === 'period'" class="tp-select__list" :style="listStyle" role="listbox">
+            <li v-for="p in ['AM','PM']" :key="p" class="tp-select__item" :class="{ 'is-active': !isEmpty && p === period }" :style="!isEmpty && p === period ? activeItemStyle : {}" role="option" @click.stop="selectPeriod(p)">{{ p }}</li>
+          </ul>
+        </div>
       </div>
     `,
     props: {
@@ -515,12 +507,6 @@
         openDropdown.value = openDropdown.value === name ? null : name;
       };
       const closeDropdown = () => { openDropdown.value = null; };
-
-      const activateFromPlaceholder = () => {
-        if (props.content?.readonly) return;
-        emitChange(0, 0);
-        nextTick(() => { openDropdown.value = 'hour'; });
-      };
 
       watch(openDropdown, async (val) => {
         if (!val) return;
@@ -587,7 +573,9 @@
       const selectStyle = computed(() => {
         const filled = !isEmpty.value;
         const borderColor = (filled && props.content?.filledBorderColor) || props.content?.borderColor || '#d1d5db';
-        const textColor   = (filled && props.content?.filledTextColor)   || props.content?.textColor   || '#1a1a1a';
+        const textColor = filled
+          ? (props.content?.filledTextColor || props.content?.textColor || '#1a1a1a')
+          : (props.content?.placeholderColor || '#9ca3af');
         return {
           ...fontStyle.value,
           color:           textColor,
@@ -626,8 +614,9 @@
       return {
         isEmpty, is12h, period, displayHour, displayMinute, hourOptions, minuteOptions,
         stateClasses, openDropdown, pickerRef, hourListRef, minuteListRef,
-        toggleDropdown, activateFromPlaceholder, selectHour, selectMinute, selectPeriod,
-        rootStyle, selectStyle, separatorStyle, placeholderStyle, listStyle, activeItemStyle,
+
+        toggleDropdown, selectHour, selectMinute, selectPeriod,
+        rootStyle, selectStyle, separatorStyle, listStyle, activeItemStyle,
       };
     },
   };
