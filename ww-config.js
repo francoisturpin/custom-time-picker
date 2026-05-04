@@ -70,14 +70,6 @@ export default {
       /* wwEditor:end */
     },
 
-    // — Typography
-    typography: {
-      label: { en: 'Typography' },
-      type: 'Typography',
-      section: 'style',
-      bindable: true,
-    },
-
     // — Colors (default state)
     textColor: {
       label: { en: 'Text color' },

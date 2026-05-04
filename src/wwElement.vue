@@ -258,22 +258,6 @@ export default {
       closeDropdown()
     }
 
-    // — Typography: extract only valid CSS properties from WeWeb typography object
-    const fontStyle = computed(() => {
-      const typo = props.content?.typography
-      if (!typo) return {}
-      const css = {}
-      if (typo.fontFamily)     css.fontFamily     = typo.fontFamily
-      if (typo.fontSize)       css.fontSize       = typo.fontSize
-      if (typo.fontWeight)     css.fontWeight     = typo.fontWeight
-      if (typo.fontStyle)      css.fontStyle      = typo.fontStyle
-      if (typo.lineHeight)     css.lineHeight     = typo.lineHeight
-      if (typo.letterSpacing)  css.letterSpacing  = typo.letterSpacing
-      if (typo.textTransform)  css.textTransform  = typo.textTransform
-      if (typo.textDecoration) css.textDecoration = typo.textDecoration
-      return css
-    })
-
     // — State classes
     const stateClasses = computed(() => ({
       filled:   !isEmpty.value,
@@ -293,7 +277,6 @@ export default {
         ? (props.content?.filledTextColor || props.content?.textColor || '#1a1a1a')
         : (props.content?.placeholderColor || '#9ca3af')
       return {
-        ...fontStyle.value,
         color:           textColor,
         backgroundColor: props.content?.backgroundColor || '#ffffff',
         border:          `${props.content?.borderWidth || '1px'} solid ${borderColor}`,
@@ -304,13 +287,9 @@ export default {
 
     const separatorStyle = computed(() => ({
       color: props.content?.separatorColor || '#1a1a1a',
-      ...(fontStyle.value.fontSize   ? { fontSize:   fontStyle.value.fontSize }   : {}),
-      ...(fontStyle.value.fontWeight ? { fontWeight: fontStyle.value.fontWeight } : {}),
-      ...(fontStyle.value.fontFamily ? { fontFamily: fontStyle.value.fontFamily } : {}),
     }))
 
     const listStyle = computed(() => ({
-      ...fontStyle.value,
       color:           props.content?.textColor       || '#1a1a1a',
       backgroundColor: props.content?.backgroundColor || '#ffffff',
       border:          `${props.content?.borderWidth  || '1px'} solid ${props.content?.borderColor || '#d1d5db'}`,
@@ -374,6 +353,14 @@ export default {
   background: none;
   font: inherit;
   line-height: inherit;
+  letter-spacing: inherit;
+}
+
+.tp-select__list,
+.tp-select__item,
+.separator {
+  font: inherit;
+  letter-spacing: inherit;
 }
 
 .tp-select__btn:focus { outline: none; }
