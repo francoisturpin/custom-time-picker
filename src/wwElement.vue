@@ -266,8 +266,9 @@ export default {
 
     // — Styles
     const rootStyle = computed(() => ({
-      gap:     props.content?.gap || '6px',
-      opacity: props.content?.readonly ? 0.6 : 1,
+      fontSize: props.content?.fontSize || '14px',
+      gap:      props.content?.gap || '6px',
+      opacity:  props.content?.readonly ? 0.6 : 1,
     }))
 
     const selectStyle = computed(() => {

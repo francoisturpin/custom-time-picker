@@ -70,6 +70,29 @@ export default {
       /* wwEditor:end */
     },
 
+    // — Typography
+    fontSize: {
+      label: { en: 'Font size' },
+      type: 'Length',
+      section: 'style',
+      options: {
+        unitChoices: [
+          { value: 'px', label: 'px', min: 8, max: 72 },
+          { value: 'em', label: 'em', min: 0.5, max: 4, step: 0.05 },
+          { value: 'rem', label: 'rem', min: 0.5, max: 4, step: 0.05 },
+        ],
+      },
+      responsive: true,
+      defaultValue: '14px',
+      bindable: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: 'string',
+        tooltip: 'CSS font-size value, e.g. "14px", "1rem"',
+      },
+      /* wwEditor:end */
+    },
+
     // — Colors (default state)
     textColor: {
       label: { en: 'Text color' },
