@@ -240,15 +240,16 @@
       padding: 4px 0;
       min-width: 100%;
       max-height: 200px;
+      overflow-x: hidden;
       overflow-y: auto;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
       scrollbar-width: thin;
-      scrollbar-color: rgba(0,0,0,0.2) transparent;
+      scrollbar-color: #096B70 transparent;
     }
 
     .tp-select__list::-webkit-scrollbar { width: 4px; }
     .tp-select__list::-webkit-scrollbar-track { background: transparent; }
-    .tp-select__list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+    .tp-select__list::-webkit-scrollbar-thumb { background: #096B70; border-radius: 4px; }
 
     .tp-select__item {
       padding: 6px 14px;
@@ -418,7 +419,7 @@
   // ── Time Picker component ────────────────────────────
   const TimePicker = {
     template: `
-      <div ref="pickerRef" class="ww-time-picker" :style="rootStyle">
+      <div ref="pickerRef" class="ww-time-picker" :class="stateClasses" :style="rootStyle">
         <template v-if="isEmpty">
           <span class="ww-time-picker__placeholder" :style="placeholderStyle">
             {{ content?.placeholder || '--:--' }}
@@ -578,14 +579,24 @@
         opacity: props.content?.readonly ? 0.6 : 1,
       }));
 
-      const selectStyle = computed(() => ({
-        ...fontStyle.value,
-        color:           props.content?.textColor        || '#1a1a1a',
-        backgroundColor: props.content?.backgroundColor  || '#ffffff',
-        border:          `${props.content?.borderWidth   || '1px'} solid ${props.content?.borderColor || '#d1d5db'}`,
-        borderRadius:    props.content?.borderRadius     || '6px',
-        padding:         props.content?.padding          || '6px 10px',
+      const stateClasses = computed(() => ({
+        filled:   !isEmpty.value,
+        readonly: !!props.content?.readonly,
       }));
+
+      const selectStyle = computed(() => {
+        const filled = !isEmpty.value;
+        const borderColor = (filled && props.content?.filledBorderColor) || props.content?.borderColor || '#d1d5db';
+        const textColor   = (filled && props.content?.filledTextColor)   || props.content?.textColor   || '#1a1a1a';
+        return {
+          ...fontStyle.value,
+          color:           textColor,
+          backgroundColor: props.content?.backgroundColor  || '#ffffff',
+          border:          `${props.content?.borderWidth   || '1px'} solid ${borderColor}`,
+          borderRadius:    props.content?.borderRadius     || '6px',
+          padding:         props.content?.padding          || '6px 10px',
+        };
+      });
 
       const separatorStyle = computed(() => ({
         color: props.content?.separatorColor || '#1a1a1a',
@@ -614,7 +625,7 @@
 
       return {
         isEmpty, is12h, period, displayHour, displayMinute, hourOptions, minuteOptions,
-        openDropdown, pickerRef, hourListRef, minuteListRef,
+        stateClasses, openDropdown, pickerRef, hourListRef, minuteListRef,
         toggleDropdown, activateFromPlaceholder, selectHour, selectMinute, selectPeriod,
         rootStyle, selectStyle, separatorStyle, placeholderStyle, listStyle, activeItemStyle,
       };
@@ -623,20 +634,22 @@
 
   // ── Defaults ─────────────────────────────────────────
   const DEFAULTS = {
-    locale:          'fr',
-    initialValue:    '',
-    placeholder:     '--:--',
-    readonly:        false,
-    textColor:       '#1a1a1a',
-    backgroundColor: '#ffffff',
-    placeholderColor:'#9ca3af',
-    separatorColor:  '#1a1a1a',
-    borderColor:     '#d1d5db',
-    borderWidth:     '1px',
-    borderRadius:    '6px',
-    padding:         '6px 12px',
-    gap:             '6px',
-    accentColor:     '#3b82f6',
+    locale:           'fr',
+    initialValue:     '',
+    placeholder:      '--:--',
+    readonly:         false,
+    textColor:        '#1a1a1a',
+    backgroundColor:  '#ffffff',
+    placeholderColor: '#9ca3af',
+    separatorColor:   '#1a1a1a',
+    borderColor:      '#d1d5db',
+    borderWidth:      '1px',
+    borderRadius:     '6px',
+    padding:          '6px 12px',
+    gap:              '6px',
+    accentColor:      '#3b82f6',
+    filledBorderColor:'',
+    filledTextColor:  '',
   };
 
   // ── App ───────────────────────────────────────────────
@@ -695,6 +708,21 @@
           <div class="control-row"><label>Séparateur</label><input type="color" v-model="config.separatorColor" /></div>
           <div class="control-row"><label>Bordure</label><input type="color" v-model="config.borderColor" /></div>
           <div class="control-row"><label>Accent (actif)</label><input type="color" v-model="config.accentColor" /></div>
+          <div class="section-title">État rempli</div>
+          <div class="control-row">
+            <label>Bordure (rempli)</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="color" v-model="config.filledBorderColor" />
+              <button style="font-size:10px;padding:2px 6px;background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:4px;cursor:pointer" @click="config.filledBorderColor=''">✕</button>
+            </div>
+          </div>
+          <div class="control-row">
+            <label>Texte (rempli)</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="color" v-model="config.filledTextColor" />
+              <button style="font-size:10px;padding:2px 6px;background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:4px;cursor:pointer" @click="config.filledTextColor=''">✕</button>
+            </div>
+          </div>
           <div class="section-title">Dimensions</div>
           <div class="control-row"><label>Border width</label><input type="text" v-model="config.borderWidth" placeholder="1px" /></div>
           <div class="control-row"><label>Border radius</label><input type="text" v-model="config.borderRadius" placeholder="6px" /></div>

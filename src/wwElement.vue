@@ -1,5 +1,5 @@
 <template>
-  <div ref="pickerRef" class="ww-time-picker" :style="rootStyle">
+  <div ref="pickerRef" class="ww-time-picker" :class="stateClasses" :style="rootStyle">
 
     <!-- ─── Placeholder state ─────────────────────────────────────── -->
     <template v-if="isEmpty">
@@ -307,20 +307,31 @@ export default {
       return css
     })
 
+    // — State classes (expose state to WeWeb wrapper + CSS)
+    const stateClasses = computed(() => ({
+      filled: !isEmpty.value,
+      readonly: !!props.content?.readonly,
+    }))
+
     // — Styles
     const rootStyle = computed(() => ({
       gap: props.content?.gap || '6px',
       opacity: props.content?.readonly ? 0.6 : 1,
     }))
 
-    const selectStyle = computed(() => ({
-      ...fontStyle.value,
-      color: props.content?.textColor || '#1a1a1a',
-      backgroundColor: props.content?.backgroundColor || '#ffffff',
-      border: `${props.content?.borderWidth || '1px'} solid ${props.content?.borderColor || '#d1d5db'}`,
-      borderRadius: props.content?.borderRadius || '6px',
-      padding: props.content?.padding || '6px 10px',
-    }))
+    const selectStyle = computed(() => {
+      const filled = !isEmpty.value
+      const borderColor = (filled && props.content?.filledBorderColor) || props.content?.borderColor || '#d1d5db'
+      const textColor   = (filled && props.content?.filledTextColor)   || props.content?.textColor   || '#1a1a1a'
+      return {
+        ...fontStyle.value,
+        color:           textColor,
+        backgroundColor: props.content?.backgroundColor || '#ffffff',
+        border:          `${props.content?.borderWidth || '1px'} solid ${borderColor}`,
+        borderRadius:    props.content?.borderRadius || '6px',
+        padding:         props.content?.padding || '6px 10px',
+      }
+    })
 
     const separatorStyle = computed(() => ({
       color: props.content?.separatorColor || '#1a1a1a',
@@ -359,6 +370,7 @@ export default {
       displayMinute,
       hourOptions,
       minuteOptions,
+      stateClasses,
       openDropdown,
       pickerRef,
       hourListRef,
@@ -436,10 +448,11 @@ export default {
   padding: 4px 0;
   min-width: 100%;
   max-height: 200px;
+  overflow-x: hidden;
   overflow-y: auto;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  scrollbar-color: #096B70 transparent;
 }
 
 .tp-select__list::-webkit-scrollbar {
@@ -451,7 +464,7 @@ export default {
 }
 
 .tp-select__list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: #096B70;
   border-radius: 4px;
 }
 

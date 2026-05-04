@@ -93,7 +93,7 @@ export default {
       bindable: true,
     },
 
-    // — Colors
+    // — Colors (default state)
     textColor: {
       label: { en: 'Text color' },
       type: 'Color',
@@ -128,6 +128,34 @@ export default {
       section: 'style',
       defaultValue: '#3b82f6',
       bindable: true,
+    },
+
+    // — Colors (filled state)
+    filledBorderColor: {
+      label: { en: 'Border color — filled' },
+      type: 'Color',
+      section: 'style',
+      defaultValue: '',
+      bindable: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: 'string',
+        tooltip: 'Border color when a time value is selected. Leave empty to use the default border color.',
+      },
+      /* wwEditor:end */
+    },
+    filledTextColor: {
+      label: { en: 'Text color — filled' },
+      type: 'Color',
+      section: 'style',
+      defaultValue: '',
+      bindable: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: 'string',
+        tooltip: 'Text color when a time value is selected. Leave empty to use the default text color.',
+      },
+      /* wwEditor:end */
     },
 
     // — Border
