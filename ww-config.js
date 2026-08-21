@@ -241,14 +241,22 @@ export default {
     },
 
     // — Spacing
+    // Text rather than Length: the Length control holds a single value + unit and
+    // rejects a shorthand such as "6px 10px" with "Value not in the list".
     padding: {
       label: { en: 'Padding' },
-      type: 'Length',
+      type: 'Text',
       section: 'style',
       responsive: true,
       states: true,
       defaultValue: '6px 10px',
       bindable: true,
+      /* wwEditor:start */
+      bindingValidation: {
+        type: 'string',
+        tooltip: 'CSS padding shorthand, e.g. "6px 10px", "8px" or "4px 8px 4px 8px"',
+      },
+      /* wwEditor:end */
     },
     gap: {
       label: { en: 'Gap' },
