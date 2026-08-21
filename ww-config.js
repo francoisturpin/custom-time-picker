@@ -244,7 +244,10 @@ export default {
     // Text rather than Length: the Length control holds a single value + unit and
     // rejects a shorthand such as "6px 10px" with "Value not in the list".
     padding: {
-      label: { en: 'Padding' },
+      // "Field padding" rather than "Padding": WeWeb's native Spacing section already
+      // shows a Padding control, which applies to the root. This one applies to the
+      // hour / minute / period controls.
+      label: { en: 'Field padding' },
       type: 'Text',
       section: 'style',
       responsive: true,
