@@ -6,6 +6,44 @@ export default {
     icon: 'clock',
   },
 
+  options: {
+    // The root is an inline flex row of selects. Never let the compiler fall back to a
+    // block-level display: it would stack the hour / minute / period controls.
+    displayAllowedValues: ['inline-flex', 'flex'],
+    // The dropdown lists are absolutely positioned and intentionally overflow the root.
+    // A root overflow would clip them.
+    ignoredStyleProperties: ['overflow'],
+  },
+
+  // Selector-based states: CSS matching only, anchored on the component root with `&`.
+  // The component owns the classes; no add-state / remove-state runtime events are needed.
+  states: [
+    { label: 'filled', selector: '&.filled' },
+    { label: 'readonly', selector: '&.readonly' },
+    { label: 'open', selector: '&.open' },
+    { label: 'focus', selector: '&:focus-within' },
+  ],
+
+  // CSS renderer hook: runs for every compiled state x breakpoint slot.
+  // Values are passed straight through so formulas stay reactive.
+  css({ content }) {
+    return [
+      { property: '--tp-font-size', value: content.fontSize },
+      { property: '--tp-gap', value: content.gap },
+      { property: '--tp-padding', value: content.padding },
+      { property: '--tp-text-color', value: content.textColor },
+      { property: '--tp-bg-color', value: content.backgroundColor },
+      { property: '--tp-placeholder-color', value: content.placeholderColor },
+      { property: '--tp-separator-color', value: content.separatorColor },
+      { property: '--tp-accent-color', value: content.accentColor },
+      { property: '--tp-filled-border-color', value: content.filledBorderColor },
+      { property: '--tp-filled-text-color', value: content.filledTextColor },
+      { property: '--tp-border-color', value: content.borderColor },
+      { property: '--tp-border-width', value: content.borderWidth },
+      { property: '--tp-border-radius', value: content.borderRadius },
+    ]
+  },
+
   triggerEvents: [
     {
       name: 'change',
@@ -83,6 +121,7 @@ export default {
         ],
       },
       responsive: true,
+      states: true,
       defaultValue: '14px',
       bindable: true,
       /* wwEditor:start */
@@ -98,6 +137,8 @@ export default {
       label: { en: 'Text color' },
       type: 'Color',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '#1a1a1a',
       bindable: true,
     },
@@ -105,6 +146,8 @@ export default {
       label: { en: 'Background' },
       type: 'Color',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '#ffffff',
       bindable: true,
     },
@@ -112,6 +155,8 @@ export default {
       label: { en: 'Empty state color' },
       type: 'Color',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '#9ca3af',
       bindable: true,
     },
@@ -119,6 +164,8 @@ export default {
       label: { en: 'Separator color' },
       type: 'Color',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '#1a1a1a',
       bindable: true,
     },
@@ -126,6 +173,8 @@ export default {
       label: { en: 'Accent color' },
       type: 'Color',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '#3b82f6',
       bindable: true,
     },
@@ -135,6 +184,8 @@ export default {
       label: { en: 'Border color — filled' },
       type: 'Color',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '',
       bindable: true,
       /* wwEditor:start */
@@ -148,6 +199,8 @@ export default {
       label: { en: 'Text color — filled' },
       type: 'Color',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '',
       bindable: true,
       /* wwEditor:start */
@@ -163,6 +216,8 @@ export default {
       label: { en: 'Border color' },
       type: 'Color',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '#d1d5db',
       bindable: true,
     },
@@ -170,6 +225,8 @@ export default {
       label: { en: 'Border width' },
       type: 'Length',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '1px',
       bindable: true,
     },
@@ -177,6 +234,8 @@ export default {
       label: { en: 'Border radius' },
       type: 'Length',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '6px',
       bindable: true,
     },
@@ -186,6 +245,8 @@ export default {
       label: { en: 'Padding' },
       type: 'Length',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '6px 10px',
       bindable: true,
     },
@@ -193,6 +254,8 @@ export default {
       label: { en: 'Gap' },
       type: 'Length',
       section: 'style',
+      responsive: true,
+      states: true,
       defaultValue: '6px',
       bindable: true,
     },

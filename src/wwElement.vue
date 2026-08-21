@@ -1,11 +1,10 @@
 <template>
-  <div ref="pickerRef" class="ww-time-picker" :class="stateClasses" :style="rootStyle">
+  <div ref="pickerRef" class="ww-time-picker" :class="stateClasses">
 
     <!-- Hour -->
     <div class="tp-select" :class="{ 'is-open': openDropdown === 'hour', 'is-disabled': content?.readonly }">
       <button
         class="tp-select__btn"
-        :style="selectStyle"
         :disabled="content?.readonly"
         type="button"
         @click.stop="toggleDropdown('hour')"
@@ -19,7 +18,6 @@
         v-if="openDropdown === 'hour'"
         ref="hourListRef"
         class="tp-select__list"
-        :style="listStyle"
         role="listbox"
       >
         <li
@@ -27,7 +25,6 @@
           :key="h.value"
           class="tp-select__item"
           :class="{ 'is-active': !isEmpty && h.value === displayHour }"
-          :style="!isEmpty && h.value === displayHour ? activeItemStyle : {}"
           role="option"
           :aria-selected="!isEmpty && h.value === displayHour"
           @click.stop="selectHour(h.value)"
@@ -35,13 +32,12 @@
       </ul>
     </div>
 
-    <span class="separator" :style="separatorStyle">:</span>
+    <span class="separator">:</span>
 
     <!-- Minute -->
     <div class="tp-select" :class="{ 'is-open': openDropdown === 'minute', 'is-disabled': content?.readonly }">
       <button
         class="tp-select__btn"
-        :style="selectStyle"
         :disabled="content?.readonly"
         type="button"
         @click.stop="toggleDropdown('minute')"
@@ -55,7 +51,6 @@
         v-if="openDropdown === 'minute'"
         ref="minuteListRef"
         class="tp-select__list"
-        :style="listStyle"
         role="listbox"
       >
         <li
@@ -63,7 +58,6 @@
           :key="m"
           class="tp-select__item"
           :class="{ 'is-active': !isEmpty && m === displayMinute }"
-          :style="!isEmpty && m === displayMinute ? activeItemStyle : {}"
           role="option"
           :aria-selected="!isEmpty && m === displayMinute"
           @click.stop="selectMinute(m)"
@@ -79,7 +73,6 @@
     >
       <button
         class="tp-select__btn"
-        :style="selectStyle"
         :disabled="content?.readonly"
         type="button"
         @click.stop="toggleDropdown('period')"
@@ -92,7 +85,6 @@
       <ul
         v-if="openDropdown === 'period'"
         class="tp-select__list"
-        :style="listStyle"
         role="listbox"
       >
         <li
@@ -100,7 +92,6 @@
           :key="p"
           class="tp-select__item"
           :class="{ 'is-active': !isEmpty && p === period }"
-          :style="!isEmpty && p === period ? activeItemStyle : {}"
           role="option"
           :aria-selected="!isEmpty && p === period"
           @click.stop="selectPeriod(p)"
@@ -258,49 +249,18 @@ export default {
       closeDropdown()
     }
 
-    // — State classes
+    // — Root state classes.
+    // They back the selector-based WeWeb states declared in ww-config.js and gate the
+    // optional "filled" overrides: the CSS custom property is only consumed when the
+    // matching property is actually set, so an empty value can never produce an
+    // invalid declaration.
     const stateClasses = computed(() => ({
-      filled:   !isEmpty.value,
-      readonly: !!props.content?.readonly,
+      filled:              !isEmpty.value,
+      readonly:            !!props.content?.readonly,
+      open:                openDropdown.value !== null,
+      'has-filled-text':   !!props.content?.filledTextColor,
+      'has-filled-border': !!props.content?.filledBorderColor,
     }))
-
-    // — Styles
-    const rootStyle = computed(() => ({
-      fontSize: props.content?.fontSize || '14px',
-      gap:      props.content?.gap || '6px',
-      opacity:  props.content?.readonly ? 0.6 : 1,
-    }))
-
-    const selectStyle = computed(() => {
-      const filled      = !isEmpty.value
-      const borderColor = (filled && props.content?.filledBorderColor) || props.content?.borderColor || '#d1d5db'
-      const textColor   = filled
-        ? (props.content?.filledTextColor || props.content?.textColor || '#1a1a1a')
-        : (props.content?.placeholderColor || '#9ca3af')
-      return {
-        color:           textColor,
-        backgroundColor: props.content?.backgroundColor || '#ffffff',
-        border:          `${props.content?.borderWidth || '1px'} solid ${borderColor}`,
-        borderRadius:    props.content?.borderRadius || '6px',
-        padding:         props.content?.padding || '6px 10px',
-      }
-    })
-
-    const separatorStyle = computed(() => ({
-      color: props.content?.separatorColor || '#1a1a1a',
-    }))
-
-    const listStyle = computed(() => ({
-      color:           props.content?.textColor       || '#1a1a1a',
-      backgroundColor: props.content?.backgroundColor || '#ffffff',
-      border:          `${props.content?.borderWidth  || '1px'} solid ${props.content?.borderColor || '#d1d5db'}`,
-      borderRadius:    props.content?.borderRadius    || '6px',
-    }))
-
-    const activeItemStyle = computed(() => {
-      const accent = props.content?.accentColor || '#3b82f6'
-      return { color: accent, backgroundColor: `${accent}1a`, fontWeight: '600' }
-    })
 
     return {
       isEmpty,
@@ -319,22 +279,24 @@ export default {
       selectHour,
       selectMinute,
       selectPeriod,
-      rootStyle,
-      selectStyle,
-      separatorStyle,
-      listStyle,
-      activeItemStyle,
     }
   },
 }
 </script>
 
 <style scoped>
+/* All visual values come from the ww-config.js css() hook as CSS custom properties.
+   Every var() carries the same fallback as its property defaultValue. */
+
 .ww-time-picker {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
+  gap: var(--tp-gap, 6px);
+  font-size: var(--tp-font-size, 14px);
+}
+
+.ww-time-picker.readonly {
+  opacity: 0.6;
 }
 
 /* ─── Custom dropdown ─────────────────────────────── */
@@ -350,18 +312,28 @@ export default {
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  border: none;
-  background: none;
   font: inherit;
   line-height: inherit;
   letter-spacing: inherit;
+  color: var(--tp-placeholder-color, #9ca3af);
+  background-color: var(--tp-bg-color, #ffffff);
+  border-style: solid;
+  border-width: var(--tp-border-width, 1px);
+  border-color: var(--tp-border-color, #d1d5db);
+  border-radius: var(--tp-border-radius, 6px);
+  padding: var(--tp-padding, 6px 10px);
 }
 
-.tp-select__list,
-.tp-select__item,
-.separator {
-  font: inherit;
-  letter-spacing: inherit;
+.ww-time-picker.filled .tp-select__btn {
+  color: var(--tp-text-color, #1a1a1a);
+}
+
+.ww-time-picker.filled.has-filled-text .tp-select__btn {
+  color: var(--tp-filled-text-color, #1a1a1a);
+}
+
+.ww-time-picker.filled.has-filled-border .tp-select__btn {
+  border-color: var(--tp-filled-border-color, #d1d5db);
 }
 
 .tp-select__btn:focus { outline: none; }
@@ -373,7 +345,7 @@ export default {
   transition: transform 0.15s ease;
 }
 
-.is-open .tp-select__arrow {
+.tp-select.is-open .tp-select__arrow {
   transform: rotate(180deg);
 }
 
@@ -391,13 +363,24 @@ export default {
   overflow-x: hidden;
   overflow-y: auto;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--tp-text-color, #1a1a1a);
+  background-color: var(--tp-bg-color, #ffffff);
+  border-style: solid;
+  border-width: var(--tp-border-width, 1px);
+  border-color: var(--tp-border-color, #d1d5db);
+  border-radius: var(--tp-border-radius, 6px);
   scrollbar-width: thin;
-  scrollbar-color: #096B70 transparent;
+  scrollbar-color: var(--tp-accent-color, #3b82f6) transparent;
 }
 
 .tp-select__list::-webkit-scrollbar { width: 4px; }
 .tp-select__list::-webkit-scrollbar-track { background: transparent; }
-.tp-select__list::-webkit-scrollbar-thumb { background: #096B70; border-radius: 4px; }
+.tp-select__list::-webkit-scrollbar-thumb {
+  background: var(--tp-accent-color, #3b82f6);
+  border-radius: 4px;
+}
 
 .tp-select__item {
   padding: 6px 14px;
@@ -405,6 +388,8 @@ export default {
   text-align: center;
   white-space: nowrap;
   user-select: none;
+  font: inherit;
+  letter-spacing: inherit;
   transition: background 0.1s;
 }
 
@@ -412,9 +397,21 @@ export default {
   background: rgba(0, 0, 0, 0.05);
 }
 
+.tp-select__item.is-active {
+  color: var(--tp-accent-color, #3b82f6);
+  /* Fallback first, then the accent-derived tint. color-mix() handles any colour
+     format, unlike the previous hex + "1a" concatenation which broke on rgba(). */
+  background-color: rgba(59, 130, 246, 0.1);
+  background-color: color-mix(in srgb, var(--tp-accent-color, #3b82f6) 10%, transparent);
+  font-weight: 600;
+}
+
 /* ─── Separator ───────────────────────────────────── */
 .separator {
+  font: inherit;
+  letter-spacing: inherit;
   font-weight: bold;
   user-select: none;
+  color: var(--tp-separator-color, #1a1a1a);
 }
 </style>
